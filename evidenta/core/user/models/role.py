@@ -5,7 +5,7 @@ from evidenta.core.user.enums import UserRole
 
 
 class Role(models.Model):
-    name = models.CharField(choices=UserRole.choices, unique=True)
+    name = models.CharField(choices=UserRole.choices, unique=True, max_length=32)
     permissions = models.ManyToManyField(Permission, blank=True)
 
     def __str__(self) -> str:

@@ -33,6 +33,7 @@ class Migration(migrations.Migration):
                             ("admin", "Admin"),
                         ],
                         unique=True,
+                        max_length=32
                     ),
                 ),
                 ("permissions", models.ManyToManyField(blank=True, to="auth.permission")),
