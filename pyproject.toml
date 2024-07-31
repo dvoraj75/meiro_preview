@@ -38,7 +38,7 @@ extend-generics = [
 
 [tool.coverage.run]
 omit = [
-    "tests/*",
+    "tests/",
     "conftest.py"
 ]
 
@@ -46,11 +46,10 @@ omit = [
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
-]
-exclude_also = [
     "def __repr__",
     "def __str__"
 ]
+
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "app_settings.test_settings"

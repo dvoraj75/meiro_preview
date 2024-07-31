@@ -1,10 +1,10 @@
 import graphene
 
 from evidenta.core.auth.schema import AuthMutation
-from evidenta.core.user.schema import MeQuery, UserMutation, UserQuery
+from evidenta.core.user.schemas import MeQuery, RoleQuery, UserMutation, UserQuery
 
 
-class Query(UserQuery, MeQuery, graphene.ObjectType):
+class Query(UserQuery, MeQuery, RoleQuery, graphene.ObjectType):
     pass
 
 

@@ -1,10 +1,13 @@
 import datetime
+import re
 import secrets
 import string
 from typing import Any
 
 from django.db import models
 
+from evidenta.common.enums import ApiErrorCode
+from evidenta.common.schemas.utils import get_error_message_from_error_code
 from evidenta.core.user.enums import UserGender, UserRole
 
 
@@ -59,6 +62,29 @@ def assert_none(value: Any) -> None:
 
 def assert_equal(value_1: Any, value_2: Any) -> None:
     assert value_1 == value_2
+
+
+def assert_exist(value: Any) -> None:
+    assert value
+
+
+def assert_match(regex: str, value: str) -> None:
+    assert re.match(regex, value)
+
+
+def assert_error_code(response: dict[str, Any], error_code: ApiErrorCode) -> None:
+    for error in response["errors"]:
+        assert_equal(error.get("error_code"), error_code)
+
+
+def assert_error_message(response: dict[str, Any], error_code: ApiErrorCode, error: Exception) -> None:
+    for e in response.get("errors"):
+        assert_equal(get_error_message_from_error_code(error_code, error=str(error)), e.get("message"))
+
+
+def assert_match_error_message(response: dict[str, Any], error_regex: str) -> None:
+    for e in response.get("errors"):
+        assert_match(error_regex, e.get("message"))
 
 
 def generate_random_password() -> str:
@@ -142,3 +168,19 @@ def extract_error_code_from_graphql_error_response(response: dict[str, Any]) -> 
 def extract_message_from_graphql_error_response(response: dict[str, Any]) -> str:
     for error in response.get("errors", []):
         return error.get("message")
+
+
+def generate_mutation_query(mutation: str, **input: dict[str, Any]) -> str:
+    query_template = """
+    mutation {{
+      {mutation}(input: {{
+        {input}
+      }}) {{
+        clientMutationId
+      }}
+    }}
+    """
+    # fmt: off
+    input_str = " ".join([f'{key}: {f"\"{val}\"" if isinstance(val, str) else val}' for key, val in input.items()])
+    # fmt: on
+    return query_template.format(mutation=mutation, input=input_str)

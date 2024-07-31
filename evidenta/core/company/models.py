@@ -4,16 +4,15 @@ from django.db import models
 from django.db.utils import IntegrityError
 
 from evidenta.common.exceptions import IntegrityException, NonUniqueErrorException
-from evidenta.common.models.base import BaseModel, BaseModelManagerMixin
+from evidenta.common.models.base import BaseModel
 from evidenta.core.user.enums import UserRole
 from evidenta.core.user.models.user import User
 
 from .validators import CompanyIdentificationNumberValidator
 
 
-class CompanyManager(models.Manager, BaseModelManagerMixin):
+class CompanyManager(models.Manager):
     def create(self, **company_data: dict[str, any]) -> "Company":
-        self.clean_and_validate_data(company_data)
         users: list[int] = company_data.pop("users", [])
         try:
             company: Company = super().create(**company_data)
@@ -45,11 +44,6 @@ class CompanyManager(models.Manager, BaseModelManagerMixin):
     def delete(self, company_id, as_user: "User") -> None:
         if not self.get_all(as_user=as_user).filter(id=company_id).delete()[0]:
             raise Company.DoesNotExist(f"Does not exist: company id={company_id} does not exist.")
-
-    @staticmethod
-    def clean_data(company_data: dict[str, any]) -> None:
-        if city := company_data.get("city"):
-            company_data["city"] = city.capitalize()
 
 
 class Company(BaseModel):

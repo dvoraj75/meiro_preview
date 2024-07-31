@@ -12,6 +12,9 @@ class BaseService(ABC):
     def get_all(self, *args, **kwargs) -> models.QuerySet[models.Model]:
         return self.manager.get_all(*args, **kwargs)
 
+    def get(self, *args, **kwargs) -> models.Model:
+        return self.manager.get(*args, **kwargs)
+
     def update(self, *args, **kwargs) -> None:
         self.manager.update(*args, **kwargs)
 

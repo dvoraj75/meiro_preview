@@ -70,7 +70,12 @@ class GraphqlApiFormattedError(GraphQLFormattedError):
 
 
 class BaseAPIException(GraphQLError):
-    def __init__(self, message: str, error_data: dict[str, Any] = None, error_code: ApiErrorCode = None):
+    def __init__(
+        self,
+        message: str,
+        error_data: dict[str, Any] | list[dict[str, Any]] = None,
+        error_code: ApiErrorCode = ApiErrorCode.UNEXPECTED_ERROR,
+    ):
         self.error_data = error_data
         self.error_code = error_code
         super().__init__(message)
@@ -96,4 +101,8 @@ class PermissionDeniedAPIException(BaseAPIException):
 
 
 class UnexpectedApiError(BaseAPIException):
+    pass
+
+
+class InvalidTokenAPIException(BaseAPIException):
     pass

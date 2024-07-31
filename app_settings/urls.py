@@ -16,13 +16,28 @@ Including another URLconf
 
 from django.conf.urls.i18n import i18n_patterns
 from django.contrib import admin
+from django.contrib.auth import get_user
+from django.http import JsonResponse
 from django.urls import path
+from django.views.decorators.csrf import csrf_exempt
 
 from evidenta.common.schemas.views import CustomGraphQLView
 
 
+def debug_view(request):
+    user = get_user(request)
+    is_authenticated = user.is_authenticated
+    return JsonResponse(
+        {
+            "user": str(user),
+            "is_authenticated": is_authenticated,
+        }
+    )
+
+
 urlpatterns = [
-    path("graphql", CustomGraphQLView.as_view(graphiql=True)),
+    path("graphql", csrf_exempt(CustomGraphQLView.as_view(graphiql=True))),
+    path("debug/", debug_view),
 ]
 
 urlpatterns += i18n_patterns(path("admin/", admin.site.urls))

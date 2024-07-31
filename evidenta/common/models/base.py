@@ -1,6 +1,10 @@
+from typing import Any
+
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import models
+from django.utils import timezone
 
+from evidenta.common.enums import ApiErrorCode
 from evidenta.common.validators import BaseDataValidator
 
 
@@ -15,7 +19,7 @@ class BaseModel(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def update(self, **data: dict[str, any]) -> None:
+    def update(self, **data: dict[str, Any]) -> None:
         for field_name, value in data.items():
             try:
                 if (field := self._meta.get_field(field_name)).is_relation and not isinstance(field, models.ForeignKey):
@@ -23,7 +27,25 @@ class BaseModel(models.Model):
                 else:
                     setattr(self, field_name, value)
             except FieldDoesNotExist as e:
-                raise ValidationError(f"Field {field_name} does not exist") from e
+                raise ValidationError(
+                    f"Field {field_name} does not exist",
+                    params={"field": "field_name", "value": value},
+                    code=ApiErrorCode.FIELD_DOES_NOT_EXIST,
+                ) from e
+
+
+class BaseTokenModel(BaseModel):
+    user = models.ForeignKey("user.User", on_delete=models.CASCADE)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        abstract = True
+
+    def __str__(self) -> str:
+        return self.token
+
+    def is_valid(self):
+        return timezone.now() < self.expires_at
 
 
 class BaseModelManagerMixin:

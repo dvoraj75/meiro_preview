@@ -4,7 +4,7 @@ from .settings import *
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "evidenta_test_db",
+        "NAME": "evidenta_testing_db",
         "USER": "evidenta",
         "PASSWORD": "evidenta",
         "HOST": "127.0.0.1",

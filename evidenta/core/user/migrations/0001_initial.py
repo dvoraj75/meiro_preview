@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                             ("admin", "Admin"),
                         ],
                         unique=True,
-                        max_length=32,
+                        max_length=20,
                     ),
                 ),
                 ("permissions", models.ManyToManyField(blank=True, to="auth.permission")),
@@ -89,7 +89,6 @@ class Migration(migrations.Migration):
                     models.EmailField(
                         max_length=254,
                         unique=True,
-                        validators=[django.core.validators.EmailValidator(message="Invalid e-mail address format.")],
                     ),
                 ),
                 (
@@ -138,7 +137,11 @@ class Migration(migrations.Migration):
             options={
                 "db_table": "user",
                 "ordering": ["pk"],
-                "permissions": [("assign_company_user", "Can assign company to user")],
+                "permissions": [
+                    ("assign_company_user", "Can assign company to user"),
+                    ("assign_role", "Can assign role to user"),
+                    ("assign_supervisor", "Can assign supervisor"),
+                ],
             },
             managers=[
                 ("objects", evidenta.core.user.models.user.CustomUserManager()),

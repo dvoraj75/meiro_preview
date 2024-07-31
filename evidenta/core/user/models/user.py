@@ -1,11 +1,10 @@
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import AbstractUser, UserManager
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.models import AbstractUser, Permission, UserManager
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator, RegexValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from evidenta.common.enums import ApiErrorCode
 from evidenta.common.models.base import BaseModel
 from evidenta.core.user.enums import UserGender, UserRole
 from evidenta.core.user.models import Role
@@ -13,7 +12,6 @@ from evidenta.core.user.models import Role
 
 class CustomUserManager(UserManager):
     def create(self, **user_data) -> "User":
-        user_data["password"] = self.make_and_validate_password(user_data.get("password"))
         user_data["role"] = self.get_role_object(user_data.get("role"))
         companies: list[int] = user_data.pop("companies", [])
         user = super().create(**user_data)
@@ -32,9 +30,6 @@ class CustomUserManager(UserManager):
                 return self.filter()
 
     def update(self, user_id: int, as_user: "User", **user_data) -> None:
-        if "password" in user_data:
-            user_data["password"] = self.make_and_validate_password(user_data.get("password"))
-
         if "role" in user_data:
             user_data["role"] = self.get_role_object(user_data.get("role"))
 
@@ -54,19 +49,22 @@ class CustomUserManager(UserManager):
         try:
             return Role.objects.get(name=role_name)
         except Role.DoesNotExist as e:
-            raise ValidationError(_(f"Role {role_name} does not exist.")) from e
-
-    @staticmethod
-    def make_and_validate_password(password: str) -> str:
-        validate_password(password)
-        return make_password(password)
+            raise ValidationError(
+                f"Role {role_name} does not exist.",
+                params={"field": "role", "value": role_name},
+                code=ApiErrorCode.INVALID_CHOICE,
+            ) from e
 
     @staticmethod
     def check_if_companies_exists(companies: list[int]) -> None:
         from evidenta.core.company.models import Company
 
         if len(companies) != Company.objects.filter(id__in=companies).count():
-            raise ValidationError(_("Some of the company id does not exist."))
+            raise ValidationError(
+                "Some of the company id does not exist.",
+                params={"field": "companies", "value": companies},
+                code=ApiErrorCode.COMPANY_DOES_NOT_EXIST,
+            )
 
 
 class User(AbstractUser, BaseModel):
@@ -94,7 +92,6 @@ class User(AbstractUser, BaseModel):
     email = models.EmailField(
         blank=False,
         unique=True,
-        validators=[EmailValidator(message=_("Invalid e-mail address format."))],
     )
     role = models.ForeignKey(
         "Role",
@@ -126,7 +123,11 @@ class User(AbstractUser, BaseModel):
 
     class Meta:
         ordering = ["pk"]
-        permissions = [("assign_company_user", "Can assign company to user")]
+        permissions = [
+            ("assign_company_user", "Can assign company to user"),
+            ("assign_role", "Can assign role to user"),
+            ("assign_supervisor", "Can assign supervisor"),
+        ]
         db_table = "user"
 
     def clean(self):
@@ -150,3 +151,8 @@ class User(AbstractUser, BaseModel):
 
     def has_perm(self, perm: str, obj=None) -> bool:
         return super().has_perm(perm, obj) or (self.role and self.role.permissions.filter(codename=perm).exists())
+
+    def add_permission(self, permission: str | Permission) -> None:
+        if not isinstance(permission, Permission):
+            permission = Permission.objects.get(codename=permission)
+        self.user_permissions.add(permission)

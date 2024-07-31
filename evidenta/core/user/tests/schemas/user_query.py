@@ -6,14 +6,14 @@ import pytest
 from graphene_django.utils.testing import graphql_query
 
 from evidenta.common.enums import ApiErrorCode
-from evidenta.common.utils.tests import (
+from evidenta.common.testing.utils import (
     assert_equal,
     assert_obj_equal,
     extract_error_code_from_graphql_error_response,
     extract_message_from_graphql_error_response,
 )
 from evidenta.core.user.models import User
-from evidenta.core.user.schema import MeQuery, UserNode
+from evidenta.core.user.schemas import MeQuery, UserNode
 from evidenta.core.user.service import UserService
 
 
@@ -22,7 +22,7 @@ def test_get_queryset_should_not_fail_when_user_is_logged_and_has_permission(
     admin: User, django_client: Client, empty_filter_mock: MagicMock
 ) -> None:
     django_client.force_login(admin)
-    with patch.object(UserService, "get_all", return_value=empty_filter_mock):
+    with patch.object(UserService, "get_all_related", return_value=empty_filter_mock):
         info = MagicMock()
         info.context.user = admin
         UserNode.get_queryset(None, info)
@@ -47,10 +47,13 @@ def test_get_queryset_should_raise_unexpected_api_error(
     }
     """
     django_client.force_login(admin)
-    with patch.object(UserService, "get_all", side_effect=exception(message)):
+    with patch.object(UserService, "get_all_related", side_effect=exception(message)):
         response = graphql_query(query, client=django_client)
         assert_equal(response.status_code, 400)
-        assert_equal(extract_message_from_graphql_error_response(response.json()), message)
+        assert_equal(
+            extract_message_from_graphql_error_response(response.json()),
+            f"Unexpected error: {message}",
+        )
         assert_equal(
             extract_error_code_from_graphql_error_response(response.json()), ApiErrorCode.UNEXPECTED_ERROR.value
         )
@@ -125,7 +128,7 @@ def test_get_node_should_not_fail_when_user_is_logged_and_has_permission(
     admin: User, django_client: Client, empty_filter_mock: MagicMock
 ) -> None:
     django_client.force_login(admin)
-    with patch.object(UserService, "get", return_value=empty_filter_mock):
+    with patch.object(UserService, "get_from_related", return_value=empty_filter_mock):
         info = MagicMock()
         info.context.user = admin
         UserNode.get_node(info, "1")
@@ -146,10 +149,13 @@ def test_get_node_should_raise_unexpected_api_error(
     }
     """
     django_client.force_login(admin)
-    with patch.object(UserService, "get", side_effect=exception(message)):
+    with patch.object(UserService, "get_from_related", side_effect=exception(message)):
         response = graphql_query(query, client=django_client)
         assert_equal(response.status_code, 400)
-        assert_equal(extract_message_from_graphql_error_response(response.json()), message)
+        assert_equal(
+            extract_message_from_graphql_error_response(response.json()),
+            f"Unexpected error: {message}",
+        )
         assert_equal(
             extract_error_code_from_graphql_error_response(response.json()), ApiErrorCode.UNEXPECTED_ERROR.value
         )
@@ -165,7 +171,7 @@ def test_get_node_should_raise_object_does_not_exist_error(admin: User, django_c
     }
     """
     django_client.force_login(admin)
-    with patch.object(UserService, "get", side_effect=User.DoesNotExist):
+    with patch.object(UserService, "get_from_related", side_effect=User.DoesNotExist):
         response = graphql_query(query, client=django_client)
         assert_equal(response.status_code, 400)
         assert_equal(
@@ -230,7 +236,7 @@ def test_resolve_me_should_return_current_user(
     admin: User, django_client: Client, empty_filter_mock: MagicMock
 ) -> None:
     django_client.force_login(admin)
-    with patch.object(UserService, "get_all", return_value=empty_filter_mock):
+    with patch.object(UserService, "get_all_related", return_value=empty_filter_mock):
         info = MagicMock()
         info.context.user = admin
         assert_obj_equal(MeQuery.resolve_me(None, info), admin)

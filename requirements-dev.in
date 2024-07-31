@@ -1,5 +1,7 @@
 black==24.4.2
+django==4.2.14
 django-mock-queries==2.2.0
+freezegun==1.5.1
 isort==5.13.2
 pip-tools==7.4.1
 pre-commit==3.7.1

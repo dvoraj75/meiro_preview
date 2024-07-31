@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 import pytest
 
-from evidenta.common.utils.tests import (
+from evidenta.common.testing.utils import (
     assert_count,
     assert_exists,
     assert_obj_equal,
@@ -41,10 +41,6 @@ def test_create_user_with_all_roles_successfully(user_data: dict[str, Any]) -> N
     [
         {"username": ""},
         {"username": "toolong" * 50},
-        {"password": ""},
-        {"password": "qwerty"},
-        {"password": "password"},
-        {"password": "112"},
         {"username": None},
         {"title": "toolong" * 10},
         {"first_name": ""},
@@ -162,16 +158,11 @@ def test_update_user_with_empty_kwargs_successfully_finnish_with_no_changes(
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("setup_roles")
 @pytest.mark.parametrize(
     "invalid_data",
     [
         {"username": ""},
         {"username": "toolong" * 50},
-        {"password": ""},
-        {"password": "qwerty"},
-        {"password": "password"},
-        {"password": "112"},
         {"username": None},
         {"title": "toolong" * 10},
         {"first_name": ""},
